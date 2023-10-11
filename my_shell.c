@@ -40,7 +40,7 @@ void execute_command(char *command) {
                 perror("Fork failed");
             } else if (pid == 0) {
                 // Child process
-                execv(command_path, args);
+                if (execv(command_path, args) == -1){
                 perror("Execv failed");
                 exit(EXIT_FAILURE);
             } else {
