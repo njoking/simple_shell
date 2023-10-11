@@ -20,22 +20,41 @@ void execute_command(char *command) {
         i++;
     }
     args[i] = NULL;
-
-    // Fork a child process
-    pid_t pid = fork();
-
-    if (pid < 0) {
-        perror("Fork failed");
-    } else if (pid == 0) {
-        // Child process
-        execvp(args[0], args);
-        perror("Execvp failed");
-        exit(EXIT_FAILURE);
-    } else {
-        // Parent process
-        waitpid(pid, NULL, 0);
+    // Check if the command exists in the PATH (ADDED)
+    char *path = getenv("PATH");
+    if (path == NULL) {
+        perror("Failed to get PATH");
+        return;
     }
-}
+     char *path_copy = strdup(path);
+    char *path_token = strtok(path_copy, ":");
+    while (path_token != NULL) {
+        char command_path[MAX_BUFFER_SIZE];
+        snprintf(command_path, sizeof(command_path), "%s/%s", path_token, args[0]);
+
+        if (access(command_path, X_OK) == 0) {
+            // Fork a child process
+            pid_t pid = fork();
+
+            if (pid < 0) {
+                perror("Fork failed");
+            } else if (pid == 0) {
+                // Child process
+                execv(command_path, args);
+                perror("Execv failed");
+                exit(EXIT_FAILURE);
+            } else {
+                // Parent process
+                waitpid(pid, NULL, 0);
+                break; // Exit loop if command is found and executed (CHANGED)
+            }
+        }
+
+        path_token = strtok(NULL, ":");
+    }
+
+    free(path_copy);
+}	
 
 int main() {
     char buffer[MAX_BUFFER_SIZE];
@@ -62,7 +81,8 @@ int main() {
         }
 
         // Execute the command
-        execute_command(buffer);
+        execute_command(buffer);  // Modified to handle command lines with arguments
+
     }
 
     printf("Exiting shell...\n");
