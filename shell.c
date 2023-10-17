@@ -4,9 +4,10 @@
 #include <sys/wait.h>
 #include <string.h>
 
+#define MAX_ARGS 100
+
 int main(int argc, char **argv)
 {
-    /* Declare all variables at the beginning */
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
@@ -14,10 +15,8 @@ int main(int argc, char **argv)
     int status;
     int is_interactive;
 
-    /* Suppress unused warning */
     (void)argc;  /* suppress unused warning */
 
-    /* Check if it's interactive mode */
     is_interactive = isatty(STDIN_FILENO);
 
     while (1)
@@ -38,17 +37,32 @@ int main(int argc, char **argv)
         if (line[read - 1] == '\n')
             line[read - 1] = '\0';
 
+        /* Check for the exit command */
+        if (strcmp(line, "exit") == 0)
+        {
+            free(line);
+            return 0;
+        }
+
+        /* Split the line into arguments */
+        char *exec_args[MAX_ARGS];
+        char *token = strtok(line, " ");
+        int i = 0;
+        while (token != NULL && i < MAX_ARGS - 1)
+        {
+            exec_args[i] = token;
+            i++;
+            token = strtok(NULL, " ");
+        }
+        exec_args[i] = NULL;
+
         child_pid = fork();
 
         if (child_pid == 0)  /* Child process */
         {
-            char *exec_args[2];
-            exec_args[0] = line;
-            exec_args[1] = NULL;
-
-            if (execve(line, exec_args, NULL) == -1)
+            if (execve(exec_args[0], exec_args, NULL) == -1)
             {
-                fprintf(stderr, "%s: 1: %s: not found\n", argv[0], line);
+                fprintf(stderr, "%s: 1: %s: not found\n", argv[0], exec_args[0]);
                 exit(127);
             }
         }
