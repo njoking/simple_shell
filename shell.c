@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+extern char **environ;
+
 #define MAX_BUFFER_SIZE 1024
 
 /**
