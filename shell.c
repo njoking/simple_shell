@@ -1,11 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include "shell.h"
 
-#define MAX_BUFFER_SIZE 1024
+define MAX_BUFFER_SIZE 1024
 
 /**
  * execute_command - function to execute a command
