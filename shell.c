@@ -1,82 +1,89 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <string.h>
+#include "shell.h"
 
-#define MAX_ARGS 100
-
-int main(int argc, char **argv)
+/**
+ * sig_handler - checks if Ctrl C is pressed
+ * @sig_num: int
+ */
+void sig_handler(int sig_num)
 {
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
-    pid_t child_pid;
-    int status;
-    int is_interactive;
+	if (sig_num == SIGINT)
+	{
+		_puts("\n#cisfun$ ");
+	}
+}
 
-    (void)argc;  /* suppress unused warning */
+/**
+* _EOF - handles the End of File
+* @len: return value of getline function
+* @buff: buffer
+ */
+void _EOF(int len, char *buff)
+{
+	(void)buff;
+	if (len == -1)
+	{
+		if (isatty(STDIN_FILENO))
+		{
+			_puts("\n");
+			free(buff);
+		}
+		exit(0);
+	}
+}
+/**
+  * _isatty - verif if terminal
+  */
 
-    is_interactive = isatty(STDIN_FILENO);
+void _isatty(void)
+{
+	if (isatty(STDIN_FILENO))
+		_puts("#cisfun$ ");
+}
+/**
+ * main - Shell
+ * Return: 0 on success
+ */
 
-    while (1)
-    {
-        if (is_interactive)
-            printf("($) ");
+int main(void)
+{
+	ssize_t len = 0;
+	char *buff = NULL, *value, *pathname, **arv;
+	size_t size = 0;
+	list_path *head = '\0';
+	void (*f)(char **);
 
-        read = getline(&line, &len, stdin);
-
-        if (read == -1)  /* Handling EOF (Ctrl+D) */
-        {
-            if (is_interactive)
-                printf("\n");
-            break;
-        }
-
-        /* Remove the trailing newline character */
-        if (line[read - 1] == '\n')
-            line[read - 1] = '\0';
-
-        /* Check for the exit command */
-        if (strcmp(line, "exit") == 0)
-        {
-            free(line);
-            return 0;
-        }
-
-        /* Split the line into arguments */
-        char *exec_args[MAX_ARGS];
-        char *token = strtok(line, " ");
-        int i = 0;
-        while (token != NULL && i < MAX_ARGS - 1)
-        {
-            exec_args[i] = token;
-            i++;
-            token = strtok(NULL, " ");
-        }
-        exec_args[i] = NULL;
-
-        child_pid = fork();
-
-        if (child_pid == 0)  /* Child process */
-        {
-            if (execve(exec_args[0], exec_args, NULL) == -1)
-            {
-                fprintf(stderr, "%s: 1: %s: not found\n", argv[0], exec_args[0]);
-                exit(127);
-            }
-        }
-        else if (child_pid < 0)
-        {
-            perror("Error forking");
-        }
-        else  /* Parent process */
-        {
-            wait(&status);
-        }
-    }
-
-    free(line);
-
-    return 0;
+	signal(SIGINT, sig_handler);
+	while (len != EOF)
+	{
+		_isatty();
+		len = getline(&buff, &size, stdin);
+		_EOF(len, buff);
+		arv = splitstring(buff, " \n");
+		if (!arv || !arv[0])
+			execute(arv);
+		else
+		{
+			value = _getenv("PATH");
+			head = linkpath(value);
+			pathname = _which(arv[0], head);
+			f = checkbuild(arv);
+			if (f)
+			{
+				free(buff);
+				f(arv);
+			}
+			else if (!pathname)
+				execute(arv);
+			else if (pathname)
+			{
+				free(arv[0]);
+				arv[0] = pathname;
+				execute(arv);
+			}
+		}
+	}
+	free_list(head);
+	freearv(arv);
+	free(buff);
+	return (0);
 }
