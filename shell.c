@@ -1,53 +1,53 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <string.h>
+#include <stdio.h>
 
 /**
  * main - Entry point for the simple shell
- *
  * Return: 0 on success, EXIT_FAILURE on error
  */
 int main(void)
 {
-	char *line = NULL;
-	size_t len = 0;
-	ssize_t nread;
-	pid_t pid;
+    char line[1024];
+    ssize_t nread;
+    pid_t pid;
+    char *argv[] = {NULL, NULL};
 
-	while (1)
-	{
-		write(STDOUT_FILENO, "#cisfun$ ", 9);
-		nread = getline(&line, &len, stdin);
+    while (1)
+    {
+        write(STDOUT_FILENO, "#cisfun$ ", 9);
+        nread = read(STDIN_FILENO, line, sizeof(line) - 1);
 
-		if (nread == -1 && feof(stdin))
-		{
-			exit(EXIT_SUCCESS);
-		}
+        if (nread == -1)
+        {
+            perror("read");
+            exit(EXIT_FAILURE);
+        }
 
-		line[nread - 1] = '\0';
+        if (nread > 0 && line[nread - 1] == '\n')
+        {
+            line[nread - 1] = '\0';
+        }
 
-		pid = fork();
-		
-		if (pid == 0)
-		{
-			char *argv[] = {line, NULL};
-			execve(line, argv, NULL);
-			perror("execve");
-			exit(EXIT_FAILURE);
-		}
-		else if (pid > 0)
-		{
-			wait(NULL);
-		}
-		else
-		{
-			perror("fork");
-		}
-	}
-	free(line);
-
-	return (0);
+        pid = fork();
+        if (pid == 0)
+        {
+            argv[0] = line;
+            execve(line, argv, NULL);
+            perror("execve");
+            exit(EXIT_FAILURE);
+        }
+        else if (pid > 0)
+        {
+            wait(NULL);
+        }
+        else
+        {
+            perror("fork");
+        }
+    }
+    return (0);
 }
