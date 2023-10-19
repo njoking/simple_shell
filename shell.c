@@ -1,5 +1,11 @@
 #include "shell.h"
 
+/**
+ * main - Entry point for the shell program.
+ * @argc: The number of arguments.
+ * @argv: The arguments as string array.
+ * Return: 0 on success, otherwise exit status.
+ */
 int main(int argc, char **argv)
 {
 	char *line = NULL;
@@ -29,6 +35,11 @@ int main(int argc, char **argv)
 	return (0);
 }
 
+/**
+ * execute_command - Executes the shell command.
+ * @line: The command line to execute.
+ * @argv0: The name of the executing program.
+ */
 void execute_command(char *line, char *argv0)
 {
 	char *exec_args[MAX_ARGS];
