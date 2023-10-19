@@ -1,3 +1,11 @@
+/**
+ * simple_shell - A simple shell program
+ * 
+ * This is a simple shell program that mimics some of the functionalities
+ * of a Unix shell.
+ */
+
+/* Standard includes */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,92 +13,73 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-extern char **environ;  // Declare the external environment variable
-
+/* Constants */
 #define MAX_BUFFER_SIZE 1024
 
-void execute_command(char *command) {
-    char *args[MAX_BUFFER_SIZE];
-    char *token;
-    int i = 0;
+/**
+ * execute_command - Executes a shell command.
+ * @command: The command to execute.
+ *
+ * Return: None.
+ */
+void execute_command(char *command)
+{
+	char *args[MAX_BUFFER_SIZE];
+	char *token;
+	int i = 0, command_executed = 0;
 
-    token = strtok(command, " \t\n");
-    while (token != NULL) {
-        args[i] = token;
-        token = strtok(NULL, " \t\n");
-        i++;
-    }
-    args[i] = NULL;
+	/* Tokenize the command */
+	token = strtok(command, " \t\n");
+	while (token != NULL)
+	{
+		args[i++] = token;
+		token = strtok(NULL, " \t\n");
+	}
+	args[i] = NULL;
 
-    // Handling built-in 'env' command
-    if (strcmp(args[0], "env") == 0) {  // ADDED
-        for (i = 0; environ[i] != NULL; i++) {
-            printf("%s\n", environ[i]);
-        }
-        return;
-    }
+	/* Handle the 'env' command */
+	if (strcmp(args[0], "env") == 0)
+	{
+		for (i = 0; environ[i] != NULL; i++)
+			printf("%s\n", environ[i]);
+		return;
+	}
 
-    char *path = getenv("PATH");
-    if (path == NULL) {
-        perror("Failed to get PATH");
-        return;
-    }
-    char *path_copy = strdup(path);
-    char *path_token = strtok(path_copy, ":");
-    int command_executed = 0;  // Flag to track if command was executed
-    while (path_token != NULL) {
-        char command_path[MAX_BUFFER_SIZE];
-        snprintf(command_path, sizeof(command_path), "%s/%s", path_token, args[0]);
+	/* Execute the command */
+	execute_external_command(args, &command_executed);
 
-        if (access(command_path, X_OK) == 0) {
-            pid_t pid = fork();
-            if (pid < 0) {
-                perror("Fork failed");
-            } else if (pid == 0) {
-                if (execv(command_path, args) == -1) {
-                    perror("Execv failed");
-                    exit(EXIT_FAILURE);
-                }
-            } else {
-                waitpid(pid, NULL, 0);
-                command_executed = 1;  // Command found and executed
-                break;
-            }
-        }
-        path_token = strtok(NULL, ":");
-    }
-
-    // If command wasn't found and executed, print error message
-    if (!command_executed) {
-        fprintf(stderr, "%s: command not found\n", args[0]);
-    }
-
-    free(path_copy);
+	/* If the command wasn't executed, print an error */
+	if (!command_executed)
+		fprintf(stderr, "%s: command not found\n", args[0]);
 }
 
-int main() {
-    char buffer[MAX_BUFFER_SIZE];
+/**
+ * main - The main function for the simple shell.
+ *
+ * Return: 0 on success, otherwise returns the error code.
+ */
+int main(void)
+{
+	char buffer[MAX_BUFFER_SIZE];
 
-    while (1) {
-        printf("$ ");
-        fflush(stdout);
+	while (1)
+	{
+		printf("$ ");
+		fflush(stdout);
 
-        if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
-            break;
-        }
+		if (fgets(buffer, sizeof(buffer), stdin) == NULL)
+			break;
 
-        size_t length = strlen(buffer);
-        if (buffer[length - 1] == '\n') {
-            buffer[length - 1] = '\0';
-        }
+		size_t length = strlen(buffer);
+		if (buffer[length - 1] == '\n')
+			buffer[length - 1] = '\0';
 
-        if (strcmp(buffer, "exit") == 0) {
-            break;
-        }
+		if (strcmp(buffer, "exit") == 0)
+			break;
 
-        execute_command(buffer);
-    }
+		execute_command(buffer);
+	}
 
-    printf("Exiting shell...\n");
-    return 0;
+	printf("Exiting shell...\n");
+	return (0);
 }
