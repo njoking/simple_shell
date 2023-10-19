@@ -1,7 +1,6 @@
 #ifndef SHELL_H
 #define SHELL_H
 
-/* Standard includes */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,14 +8,15 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-/* Constants */
 #define MAX_BUFFER_SIZE 1024
 
-/* External environment variable */
 extern char **environ;
 
-/* Function prototypes */
-void execute_command(char *command);
 void execute_external_command(char *args[], int *command_executed);
+void execute_command_from_path(char *args[], int *command_executed,
+				char *path_token);
+void execute_fork(char *args[], int *command_executed, char *command_path);
+void execute_command(char *command);
+int main(void);
 
 #endif /* SHELL_H */
