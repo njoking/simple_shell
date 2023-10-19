@@ -1,80 +1,59 @@
-#include "shell.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 
 /**
- * main - Entry point for the shell program.
- * @argc: The number of arguments.
- * @argv: The arguments as string array.
+ * main - Entry point for the simplified shell.
  * Return: 0 on success, otherwise exit status.
  */
-int main(int argc, char **argv)
+int main(void)
 {
-	char *line = NULL;
-	size_t len = 0;
-	ssize_t read;
-	int is_interactive;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    pid_t child_pid;
 
-	(void)argc;
-	is_interactive = isatty(STDIN_FILENO);
+    while (1)
+    {
+        printf("#cisfun$ ");
+        fflush(stdout);  // Flush the output buffer to make sure the prompt is displayed
 
-	while (1)
-	{
-		if (is_interactive)
-			printf("($) ");
-		read = getline(&line, &len, stdin);
-		if (read == -1)
-		{
-			if (is_interactive)
-				printf("\n");
-			break;
-		}
-		if (line[read - 1] == '\n')
-			line[read - 1] = '\0';
-		execute_command(line, argv[0]);
-	}
-	free(line);
-	return (0);
-}
+        read = getline(&line, &len, stdin);
 
-/**
- * execute_command - Executes the shell command.
- * @line: The command line to execute.
- * @argv0: The name of the executing program.
- */
-void execute_command(char *line, char *argv0)
-{
-	char *exec_args[MAX_ARGS];
-	char *token;
-	pid_t child_pid;
+        if (read == -1)  // Handling EOF (Ctrl+D)
+        {
+            printf("\n");
+            break;
+        }
 
-	if (strcmp(line, "exit") == 0)
-		exit(0);
+        if (line[read - 1] == '\n')
+            line[read - 1] = '\0';
 
-	token = strtok(line, " ");
-	int i = 0;
+        if (strcmp(line, "exit") == 0)  // Exit command
+            break;
 
-	while (token != NULL && i < MAX_ARGS - 1)
-	{
-		exec_args[i] = token;
-		i++;
-		token = strtok(NULL, " ");
-	}
-	exec_args[i] = NULL;
-	child_pid = fork();
-
-	if (child_pid == 0)
-	{
-		if (execve(exec_args[0], exec_args, NULL) == -1)
-		{
-			fprintf(stderr, "%s: 1: %s: not found\n", argv0, exec_args[0]);
-			exit(127);
-		}
-	}
-	else if (child_pid < 0)
-	{
-		perror("Error forking");
-	}
-	else
-	{
-		wait(NULL);
-	}
+        child_pid = fork();
+        if (child_pid == 0)  // Child process
+        {
+            if (execve(line, NULL, NULL) == -1)
+            {
+                fprintf(stderr, "%s: No such file or directory\n", line);
+                exit(127);
+            }
+        }
+        else if (child_pid < 0)  // Fork failed
+        {
+            perror("Error forking");
+            continue;
+        }
+        else  // Parent process
+        {
+            wait(NULL);
+        }
+    }
+    free(line);
+    return (0);
 }
