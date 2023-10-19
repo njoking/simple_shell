@@ -38,14 +38,17 @@ int main(int argc, char **argv)
 
 void execute_command(char *line, char *argv0)
 {
+    char *exec_args[MAX_ARGS];
+    char *token;
+    pid_t child_pid;
+    int i = 0;
+
     /* Check for the exit command */
     if (strcmp(line, "exit") == 0)
         exit(0);
 
     /* Split the line into arguments */
-    char *exec_args[MAX_ARGS];
-    char *token = strtok(line, " ");
-    int i = 0;
+    token = strtok(line, " ");
     while (token != NULL && i < MAX_ARGS - 1)
     {
         exec_args[i] = token;
@@ -54,7 +57,7 @@ void execute_command(char *line, char *argv0)
     }
     exec_args[i] = NULL;
 
-    pid_t child_pid = fork();
+    child_pid = fork();
 
     if (child_pid == 0)  /* Child process */
     {
@@ -73,3 +76,4 @@ void execute_command(char *line, char *argv0)
         wait(NULL);
     }
 }
+
