@@ -1,22 +1,38 @@
 #include "shell.h"
-/*
- *
+
+/**
+ * main - Entry point for the shell.
+ * Return: 0 if successful
  */
+int main(void)
+{
+    char *line;
+    char *command;
+    int interactive = isatty(STDIN_FILENO);
 
-int main(void) {
-    char command[120];
+    while (1)
+    {
+        if (interactive)
+        {
+            write(STDOUT_FILENO, "($) ", 4);
+        }
 
-    while (true) {
-        display_prompt();
-        read_command(command, sizeof(command));
-        execute_command(command);
+        line = read_command();
+        if (feof(stdin))
+        {
+            if (interactive)
+            {
+                write(STDOUT_FILENO, "\n", 1);
+            }
+            exit(EXIT_SUCCESS);
+        }
+
+        command = strtok(line, "\n\t\r ");
+        if (command)
+        {
+            execute_command(command);
+        }
+        free(line);
     }
-
-
-
-
-
-    
-
-    return 0;
+    return (0);
 }
