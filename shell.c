@@ -1,20 +1,66 @@
 /**
  * simple_shell - A simple shell program
- * 
+ *
  * This is a simple shell program that mimics some of the functionalities
  * of a Unix shell.
  */
 
-/* Standard includes */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include "shell.h"
 
-/* Constants */
-#define MAX_BUFFER_SIZE 1024
+/**
+ * execute_external_command - Executes an external shell command.
+ * @args: The arguments array.
+ * @command_executed: Pointer to flag indicating if a command was executed.
+ *
+ * Return: None.
+ */
+void execute_external_command(char *args[], int *command_executed)
+{
+	char *path = getenv("PATH");
+	char *path_copy, *path_token;
+
+	if (path == NULL)
+	{
+		perror("Failed to get PATH");
+		return;
+	}
+
+	path_copy = strdup(path);
+	path_token = strtok(path_copy, ":");
+
+	while (path_token != NULL)
+	{
+		char command_path[MAX_BUFFER_SIZE];
+
+		snprintf(command_path, sizeof(command_path), "%s/%s", path_token, args[0]);
+
+		if (access(command_path, X_OK) == 0)
+		{
+			pid_t pid = fork();
+
+			if (pid < 0)
+			{
+				perror("Fork failed");
+			}
+			else if (pid == 0)
+			{
+				if (execv(command_path, args) == -1)
+				{
+					perror("Execv failed");
+					exit(EXIT_FAILURE);
+				}
+			}
+			else
+			{
+				waitpid(pid, NULL, 0);
+				*command_executed = 1;
+				break;
+			}
+		}
+		path_token = strtok(NULL, ":");
+	}
+	free(path_copy);
+}
 
 /**
  * execute_command - Executes a shell command.
@@ -26,9 +72,9 @@ void execute_command(char *command)
 {
 	char *args[MAX_BUFFER_SIZE];
 	char *token;
-	int i = 0, command_executed = 0;
+	int i = 0;
+	int command_executed = 0;
 
-	/* Tokenize the command */
 	token = strtok(command, " \t\n");
 	while (token != NULL)
 	{
@@ -37,7 +83,6 @@ void execute_command(char *command)
 	}
 	args[i] = NULL;
 
-	/* Handle the 'env' command */
 	if (strcmp(args[0], "env") == 0)
 	{
 		for (i = 0; environ[i] != NULL; i++)
@@ -45,10 +90,8 @@ void execute_command(char *command)
 		return;
 	}
 
-	/* Execute the command */
 	execute_external_command(args, &command_executed);
 
-	/* If the command wasn't executed, print an error */
 	if (!command_executed)
 		fprintf(stderr, "%s: command not found\n", args[0]);
 }
