@@ -1,10 +1,9 @@
-#include <stdio.h>
-#include <strings.h>
+#include "shell"
 /**
- * main - function that prints betty
+ * main - prints hello betty
  * Return: void
  */
 int main(void)
-{
-	printf("hello betty")
-}
+	{
+	printf("hello betty");
+	}
